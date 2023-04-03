@@ -1,16 +1,18 @@
 {
-  "name": "curriculum_management_api",
-  "version": "1.0.0",
-  "description": "Backend for curriculum management project of group prisee",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon ./src"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "express": "^4.18.2",
-    "mysql": "^2.18.1"
-  }
+	"name": "curriculum_management_api",
+	"version": "1.0.0",
+	"description": "Backend for curriculum management project of group prisee",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"dev": "nodemon ./src",
+		"start": "node ./src/index.js"
+	},
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"dotenv": "^16.0.3",
+		"express": "^4.18.2",
+		"mysql": "^2.18.1"
+	}
 }
