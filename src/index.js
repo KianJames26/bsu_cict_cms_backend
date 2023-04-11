@@ -1,11 +1,14 @@
 require("dotenv").config();
 const express = require("express");
-const mysql = require("mysql");
+const mysql = require("mysql2");
+
+const bcrypt = require("bcrypt");
 
 const app = express();
-//*Create Database Connection
+//*Create Database Connection Pool
 
-const db = mysql.createConnection({
+const pool = mysql.createPool({
+	connectionLimit: 10,
 	host: process.env.DB_HOST,
 	port: process.env.DB_HOST_PORT,
 	user: process.env.DB_USERNAME,
@@ -13,14 +16,15 @@ const db = mysql.createConnection({
 	database: process.env.DB_NAME,
 });
 
-//*Connect to Database
+//*Connect to Database Pool
 
-db.connect((err) => {
+pool.getConnection((err, connection) => {
 	if (err) {
 		console.log(err);
 	} else {
+		connection.release();
 		app.listen(process.env.PORT || "3535", () => {
-			console.log("Server running");
+			console.log(`Server running on port ${process.env.PORT || "3535"}`);
 		});
 		console.log("Application successfully connected to cms_db");
 	}
@@ -28,5 +32,18 @@ db.connect((err) => {
 
 //*Routes
 
-const loginRoutes = require("./routes/login");
-app.use("/login", loginRoutes(db));
+app.get("/test", async (req, res) => {
+	res.send(
+		`Test successful! Server running on port ${process.env.PORT || "3535"}`
+	);
+
+	// bcrypt.genSalt(10, (err, salt) => {
+	// 	bcrypt.hash("cictadmin", salt, (err, hash) => {
+	// 		console.log(hash);
+	// 	});
+	// });
+});
+
+const accountRoutes = require("./routes/account");
+app.use(express.json());
+app.use("/account", accountRoutes(pool));
