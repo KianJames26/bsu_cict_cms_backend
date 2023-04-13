@@ -27,7 +27,7 @@ module.exports = (req, res, next) => {
 									role: decodedRefreshToken.Role,
 								},
 								process.env.ACCESS_TOKEN_SECRET,
-								{ expiresIn: "1s" }
+								{ expiresIn: "15m" }
 							);
 
 							res.cookie("accessToken", accessToken, {
