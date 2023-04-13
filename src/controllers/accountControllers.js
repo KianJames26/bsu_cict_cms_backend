@@ -11,6 +11,24 @@ const pool = mysql.createPool({
 	database: process.env.DB_NAME,
 });
 
+const getCurrentDateTime = () => {
+	const now = new Date();
+	const year = now.getFullYear();
+	const month = String(now.getMonth() + 1).padStart(2, "0");
+	const day = String(now.getDate()).padStart(2, "0");
+	const hours = String(now.getHours()).padStart(2, "0");
+	const minutes = String(now.getMinutes()).padStart(2, "0");
+	const seconds = String(now.getSeconds()).padStart(2, "0");
+	return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+};
+
+const hashPassword = (password) => {
+	const saltRounds = 10;
+	const salt = bcrypt.genSaltSync(saltRounds);
+	const hash = bcrypt.hashSync(password, salt);
+	return hash;
+};
+
 // *Controllers
 module.exports.login = (req, res) => {
 	const { emailOrUsername, password } = req.body;
@@ -54,7 +72,7 @@ module.exports.login = (req, res) => {
 				const accessToken = jwt.sign(
 					{ userId: user.id, role: user.role },
 					process.env.ACCESS_TOKEN_SECRET,
-					{ expiresIn: "15m" }
+					{ expiresIn: "1s" }
 				);
 
 				const refreshToken = jwt.sign(
@@ -109,12 +127,52 @@ module.exports.logout = (req, res) => {
 };
 
 module.exports.create = (req, res) => {
-	const userId = res.locals.userId;
-	const userRole = res.locals.userRole;
+	const { username, email, password, department, role } = req.body;
+	const errorMessage = (message) => {
+		return res.status(400).json({ error: message });
+	};
+	if (!username) {
+		errorMessage("Username is required");
+	} else if (!email) {
+		errorMessage("Email is required");
+	} else if (!/\S+@\S+\.\S+/.test(email)) {
+		errorMessage("Please enter a valid email address");
+	} else if (!password) {
+		errorMessage("Password is required");
+	} else if (!department) {
+		errorMessage("Department is required");
+	} else if (!role) {
+		errorMessage("Role is required");
+	} else {
+		const date = getCurrentDateTime();
+		try {
+			// Check if username or email already exists
+			const rows = pool.query(
+				"SELECT COUNT(*) AS count FROM accounts WHERE username = ? OR email = ?",
+				[username, email]
+			);
+			if (rows.count > 0) {
+				return res
+					.status(409)
+					.json({ error: "Username or email already exists" });
+			}
 
-	if (userRole !== "ADMIN") {
-		return res
-			.status(403)
-			.json({ error: "Only admins can access this resource" });
+			// Insert user data into the database
+			pool.query(
+				"INSERT INTO accounts (username, email, password, department, role, date_created) VALUES (?, ?, ?, ?, ?, ?)",
+				[
+					username,
+					email,
+					hashPassword(password),
+					department.toUpperCase(),
+					role.toUpperCase(),
+					date,
+				]
+			);
+			return res.status(201).json({ message: "User created successfully" });
+		} catch (err) {
+			console.error(err);
+			return res.status(500).json({ error: "Internal server error" });
+		}
 	}
 };

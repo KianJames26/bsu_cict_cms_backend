@@ -10,10 +10,11 @@ const roleAuth = require("../middleware/roleAuth");
 // !Login Route
 router.post("/login", accountController.login);
 
-//! Logout Route
+// !Logout Route
 router.post("/logout", loginAuth, accountController.logout);
 
-//!Create Account
-router.post("/create", loginAuth, accountController.create);
+// !Account Manipulation Route
+router.post("/", loginAuth, roleAuth("ADMIN"), accountController.create);
 
+//*Export Route
 module.exports = router;

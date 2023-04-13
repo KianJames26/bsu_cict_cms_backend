@@ -8,8 +8,35 @@ module.exports = (req, res, next) => {
 		process.env.ACCESS_TOKEN_SECRET,
 		(err, decodedToken) => {
 			if (err) {
-				console.error(err);
-				return res.status(401).json({ error: "Please Login First" });
+				if (err.name === "TokenExpiredError") {
+					const refreshToken = req.cookies.refreshToken;
+					jwt.verify(
+						refreshToken,
+						process.env.REFRESH_TOKEN_SECRET,
+						(err, decodedRefreshToken) => {
+							if (err) {
+								console.log(err);
+								return res.status(401).send({
+									message: "Please login first",
+								});
+							}
+
+							const accessToken = jwt.sign(
+								{
+									userId: decodedRefreshToken.userId,
+									role: decodedRefreshToken.Role,
+								},
+								process.env.ACCESS_TOKEN_SECRET,
+								{ expiresIn: "1s" }
+							);
+
+							res.cookie("accessToken", accessToken, {
+								maxAge: 900000,
+								httpOnly: true,
+							});
+						}
+					);
+				}
 			}
 
 			res.locals.userId = decodedToken.userId;

@@ -35,9 +35,7 @@ pool.getConnection((err, connection) => {
 
 app.get("/test", (req, res) => {
 	res.send(
-		`Test successful! Server running on port ${
-			process.env.PORT || "3535"
-		} key : ${require("crypto").randomBytes(64).toString("hex")}`
+		`Test successful! Server running on port ${process.env.PORT || "3535"}}`
 	);
 
 	// bcrypt.genSalt(10, (err, salt) => {
