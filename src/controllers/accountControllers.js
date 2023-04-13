@@ -1,6 +1,7 @@
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+const { v4: uuidv4 } = require("uuid");
 
 const pool = mysql.createPool({
 	connectionLimit: 10,
@@ -29,83 +30,91 @@ const hashPassword = (password) => {
 	return hash;
 };
 
+const checkUserExists = (username, email, callback) => {
+	pool.query(
+		"SELECT COUNT(*) AS count FROM accounts WHERE username = ? OR email = ?",
+		[username, email],
+		(err, rows) => {
+			if (err) {
+				console.error(err);
+				return callback(new Error("Internal server error"));
+			}
+			return callback(null, rows[0].count > 0);
+		}
+	);
+};
+
 // *Controllers
 module.exports.login = (req, res) => {
-	const { emailOrUsername, password } = req.body;
+	const { loginName, password } = req.body;
 
 	const queryString = `SELECT * FROM accounts WHERE username = ? OR email = ?`;
 
-	pool.query(
-		queryString,
-		[emailOrUsername, emailOrUsername],
-		(err, results) => {
+	pool.query(queryString, [loginName, loginName], (err, results) => {
+		if (err) {
+			console.error(err);
+			return res.status(500).json({ error: "Internal Server Error" });
+		}
+
+		if (results.length === 0) {
+			return res.status(401).json({ error: "Invalid Username or Password" });
+		}
+
+		const user = results[0];
+
+		// check if the user is active
+		if (!user.isActive) {
+			return res.status(401).json({ error: "Account is not active" });
+		}
+
+		// compare the password with the stored hash
+		bcrypt.compare(password, user.password, (err, result) => {
 			if (err) {
 				console.error(err);
 				return res.status(500).json({ error: "Internal Server Error" });
 			}
 
-			if (results.length === 0) {
+			if (!result) {
 				return res.status(401).json({ error: "Invalid Username or Password" });
 			}
 
-			const user = results[0];
+			// generate JWT and refresh token
+			const accessToken = jwt.sign(
+				{ userId: user.id, role: user.role },
+				process.env.ACCESS_TOKEN_SECRET,
+				{ expiresIn: "5h" }
+			);
 
-			// check if the user is active
-			if (!user.isActive) {
-				return res.status(401).json({ error: "Account is not active" });
-			}
+			const refreshToken = jwt.sign(
+				{ userId: user.id, role: user.role },
+				process.env.REFRESH_TOKEN_SECRET
+			);
 
-			// compare the password with the stored hash
-			bcrypt.compare(password, user.password, (err, result) => {
-				if (err) {
-					console.error(err);
-					return res.status(500).json({ error: "Internal Server Error" });
-				}
-
-				if (!result) {
-					return res
-						.status(401)
-						.json({ error: "Invalid Username or Password" });
-				}
-
-				// generate JWT and refresh token
-				const accessToken = jwt.sign(
-					{ userId: user.id, role: user.role },
-					process.env.ACCESS_TOKEN_SECRET,
-					{ expiresIn: "15m" }
-				);
-
-				const refreshToken = jwt.sign(
-					{ userId: user.id, role: user.role },
-					process.env.REFRESH_TOKEN_SECRET
-				);
-
-				// save the refresh token to the database
-				const saveRefreshTokenQuery = `UPDATE accounts SET refresh_token = ? WHERE id = ?`;
-				pool.query(
-					saveRefreshTokenQuery,
-					[refreshToken, user.id],
-					(err, results) => {
-						if (err) {
-							console.error(err);
-							return res.status(500).json({ error: "Internal Server Error" });
-						}
+			// save the refresh token to the database
+			const saveRefreshTokenQuery = `UPDATE accounts SET refresh_token = ? WHERE id = ?`;
+			pool.query(
+				saveRefreshTokenQuery,
+				[refreshToken, user.id],
+				(err, results) => {
+					if (err) {
+						console.error(err);
+						return res.status(500).json({ error: "Internal Server Error" });
 					}
-				);
+				}
+			);
 
-				// return the JWT and refresh token
-				res.cookie("accessToken", accessToken, {
-					maxAge: 900000,
-					httpOnly: true,
-				});
-				res.cookie("refreshToken", refreshToken, {
-					maxAge: 900000,
-					httpOnly: true,
-				});
-				res.json({ accessToken, refreshToken });
+			// return the JWT and refresh token
+			res.cookie("accessToken", accessToken, {
+				maxAge: null,
+				httpOnly: true,
 			});
-		}
-	);
+			res.cookie("refreshToken", refreshToken, {
+				maxAge: null,
+				httpOnly: true,
+			});
+			res.json({ accessToken, refreshToken });
+		});
+	});
 };
 
 module.exports.logout = (req, res) => {
@@ -145,22 +154,34 @@ module.exports.create = (req, res) => {
 		errorMessage("Role is required");
 	} else {
 		const date = getCurrentDateTime();
+
 		try {
-			// Check if username or email already exists
-			const rows = pool.query(
-				"SELECT COUNT(*) AS count FROM accounts WHERE username = ? OR email = ?",
-				[username, email]
-			);
-			if (rows.count > 0) {
-				return res
-					.status(409)
-					.json({ error: "Username or email already exists" });
+			checkUserExists(username, email, (err, userExists) => {
+				if (err) {
+					return res.status(500).json({ error: "Internal server error" });
+				}
+				if (userExists) {
+					return res
+						.status(409)
+						.json({ error: "Username or email already exists" });
+				}
+			});
+			let id = uuidv4().replace(/-/g, "");
+			let checkIdAvailability = [];
+
+			while (checkIdAvailability.count > 0) {
+				pool.query("SELECT COUNT(*) AS count FROM accounts WHERE id = ?", [id]);
+				if (checkAvailability > 0) {
+					id = uuidv4().replace(/-/g, "");
+					checkAvailability = [];
+				}
 			}
 
 			// Insert user data into the database
 			pool.query(
-				"INSERT INTO accounts (username, email, password, department, role, date_created) VALUES (?, ?, ?, ?, ?, ?)",
+				"INSERT INTO accounts (id, username, email, password, department, role, date_created) VALUES (?, ?, ?, ?, ?, ?, ?)",
 				[
+					id,
 					username,
 					email,
 					hashPassword(password),
