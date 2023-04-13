@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
+const cookieParser = require("cookie-parser");
 
 const bcrypt = require("bcrypt");
 
@@ -32,9 +33,11 @@ pool.getConnection((err, connection) => {
 
 //*Routes
 
-app.get("/test", async (req, res) => {
+app.get("/test", (req, res) => {
 	res.send(
-		`Test successful! Server running on port ${process.env.PORT || "3535"}`
+		`Test successful! Server running on port ${
+			process.env.PORT || "3535"
+		} key : ${require("crypto").randomBytes(64).toString("hex")}`
 	);
 
 	// bcrypt.genSalt(10, (err, salt) => {
@@ -44,6 +47,7 @@ app.get("/test", async (req, res) => {
 	// });
 });
 
-const accountRoutes = require("./routes/account");
+const accountRoutes = require("./routes/accountRoutes");
 app.use(express.json());
-app.use("/account", accountRoutes(pool));
+app.use(cookieParser());
+app.use("/account", accountRoutes);
