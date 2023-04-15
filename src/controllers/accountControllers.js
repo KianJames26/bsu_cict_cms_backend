@@ -30,32 +30,29 @@ const hashPassword = (password) => {
 	return hash;
 };
 
-const checkUserExists = (username, email, callback) => {
-	let usernameExists = false;
-	let emailExists = false;
-	pool.query(
-		"SELECT COUNT(*) AS count FROM accounts WHERE username = ?",
-		[username],
-		(err, usernameRow) => {
-			if (err) {
-				console.error(err);
-				return callback(new Error("Internal server error"));
+const checkUsernameAndEmail = (username, email, callback) => {
+	const query = "SELECT * FROM accounts WHERE username = ? OR email = ?";
+	pool.query(query, [username, email], (error, results) => {
+		if (error) {
+			callback(error);
+		} else {
+			const errors = [];
+			for (const result of results) {
+				if (result.username === username) {
+					errors.push({
+						field: "username",
+						message: "Username already exists",
+					});
+				}
+
+				if (result.email === email) {
+					errors.push({ field: "email", message: "Email already exists" });
+				}
 			}
-			usernameExists = usernameRow[0].count > 0;
+
+			callback(null, errors);
 		}
-	);
-	pool.query(
-		"SELECT COUNT(*) AS count FROM accounts WHERE email = ?",
-		[email],
-		(err, emailRow) => {
-			if (err) {
-				console.error(err);
-				return callback(new Error("Internal server error"));
-			}
-			emailExists = emailRow[0].count > 0;
-			return callback(null, usernameExists, emailExists);
-		}
-	);
+	});
 };
 
 // *Controllers
@@ -120,7 +117,7 @@ module.exports.loginController = (req, res) => {
 			// return the JWT and refresh token
 			res
 				.cookie("accessToken", accessToken, {
-					maxAge: 900000,
+					maxAge: null,
 					httpOnly: true,
 				})
 				.cookie("refreshToken", refreshToken, {
@@ -174,59 +171,53 @@ module.exports.createAccountController = (req, res) => {
 		errorMessage("Role is required");
 	} else {
 		const date = getCurrentDateTime();
+		checkUsernameAndEmail(username, email, (error, errors) => {
+			if (error) {
+				console.log(error);
+				return res.status(500).json({ error: "Internal Server Error" });
+			} else if (errors.length > 0) {
+				return res.status(400).json({ errors });
+			} else {
+				const query =
+					"INSERT INTO accounts (id, username, email, password, role, department, date_created) VALUES (?, ?, ?, ?, ?, ?, ?)";
+				const hashedPassword = hashPassword(password);
+				let id = uuidv4().replace(/-/g, "");
+				let checkIdAvailability = [];
 
-		try {
-			checkUserExists(username, email, (err, usernameExists, emailExists) => {
-				if (err) {
-					return res.status(500).json({ error: "Internal server error" });
+				while (checkIdAvailability.count > 0) {
+					pool.query("SELECT COUNT(*) AS count FROM accounts WHERE id = ?", [
+						id,
+					]);
+					if (checkIdAvailability > 0) {
+						id = uuidv4().replace(/-/g, "");
+						checkIdAvailability = [];
+					}
 				}
-				if (usernameExists) {
-					return res.status(409).json({ error: "Username already exists" });
-				} else if (emailExists) {
-					return res.status(409).json({ error: "Email already exists" });
-				} else {
-					let id = uuidv4().replace(/-/g, "");
-					let checkIdAvailability = [];
 
-					while (checkIdAvailability.count > 0) {
-						pool.query("SELECT COUNT(*) AS count FROM accounts WHERE id = ?", [
-							id,
-						]);
-						if (checkAvailability > 0) {
-							id = uuidv4().replace(/-/g, "");
-							checkAvailability = [];
+				pool.query(
+					query,
+					[
+						id,
+						username,
+						email,
+						hashedPassword,
+						role.toUpperCase(),
+						department.toUpperCase(),
+						date,
+					],
+					(error, results) => {
+						if (error) {
+							console.log(error);
+							return res.status(500).json({ error: "Internal server error" });
+						} else {
+							return res
+								.status(201)
+								.json({ message: `Account ${username} successfully created` });
 						}
 					}
-
-					// Insert user data into the database
-					pool.query(
-						"INSERT INTO accounts (id, username, email, password, department, role, date_created) VALUES (?, ?, ?, ?, ?, ?, ?)",
-						[
-							id,
-							username,
-							email,
-							hashPassword(password),
-							department.toUpperCase(),
-							role.toUpperCase(),
-							date,
-						],
-						(error, results) => {
-							if (error) {
-								return res
-									.status(500)
-									.json({ error: "Failed to update account" });
-							}
-							return res.status(201).json({
-								message: `Account ${username} Created successfully`,
-							});
-						}
-					);
-				}
-			});
-		} catch (err) {
-			console.error(err);
-			return res.status(500).json({ error: "Internal server error" });
-		}
+				);
+			}
+		});
 	}
 };
 
@@ -242,107 +233,157 @@ module.exports.editAccountController = (req, res) => {
 	} = req.body;
 	const date = getCurrentDateTime();
 
+	// Check if username exists
 	pool.query(
-		"SELECT * FROM accounts WHERE id = ?",
-		[req.params.id],
-		(error, results) => {
+		"SELECT * FROM accounts WHERE username = ?",
+		[username, req.params.id],
+		(error, usernameResults) => {
 			if (error) {
 				return res.status(500).json({ error: "Internal server error" });
 			}
-
-			// console.log(results[0]);
-
-			bcrypt.compare(password, results[0].password, (err, result) => {
-				if (err) {
-					return res.status(500).json({ error: "Internal Server Error" });
-				}
-				if (result) {
-					password = results[0].password;
-					return res.send(password);
-				}
-			});
-
-			try {
-				if (username !== results[0].username && email !== results[0].email) {
-					checkUserExists(
-						username,
-						email,
-						(err, usernameExists, emailExists) => {
-							if (err) {
-								return res.status(500).json({ error: "Internal server error" });
-							}
-							if (usernameExists) {
-								return res
-									.status(409)
-									.json({ error: "Username already exists" });
-							} else if (emailExists) {
-								return res.status(409).json({ error: "Email already exists" });
-							}
+			if (usernameResults.length > 0) {
+				return res.status(403).json({ error: "Username already exists" });
+			} else {
+				// Check if email exists
+				pool.query(
+					"SELECT * FROM accounts WHERE email = ?",
+					[email, req.params.id],
+					(error, emailResults) => {
+						if (error) {
+							return res.status(500).json({ error: "Internal server error" });
 						}
-					);
-				}
-				if (!username) {
-					username = results[0].username;
-				}
-				if (!email) {
-					email = results[0].email;
-				}
-				if (!/\S+@\S+\.\S+/.test(email)) {
-					return res
-						.status(403)
-						.json({ error: "Please enter a valid email address" });
-				}
-				if (!role) {
-					role = results[0].role;
-				}
-				if (!department) {
-					department = results[0].department;
-				}
-				if (isActive === "") {
-					isActive = results[0].isActive;
-				}
-				if (!profilePicture) {
-					profilePicture = results[0].profilePicture;
-				}
-				console.log({
-					username,
-					email,
-					password,
-					department,
-					role,
-					isActive,
-					profilePicture,
-				});
-				// Update user data into the database
-				// pool.query(
-				// 	"UPDATE accounts SET username = ?, email = ?, password = ?, department = ?, role = ?, isActive = ?, profile_picture = ?, date_updated = ? WHERE id = ?",
-				// 	[
-				// 		username,
-				// 		email,
-				// 		hashPassword(password),
-				// 		department,
-				// 		role,
-				// 		isActive,
-				// 		profilePicture,
-				// 		date,
-				// 		req.params.id,
-				// 	],
-				// 	(error, results) => {
-				// 		if (error) {
-				// 			console.log(error);
-				// 			return res
-				// 				.status(500)
-				// 				.json({ error: "Failed to update account" });
-				// 		}
-				// 		return res.status(201).json({
-				// 			message: `Account ${username} updated successfully`,
-				// 		});
-				// 	}
-				// );
-			} catch (err) {
-				console.error(err);
-				return res.status(500).json({ error: "Internal server error" });
+						if (emailResults.length > 0) {
+							return res.status(403).json({ error: "Email already exists" });
+						} else {
+							pool.query(
+								"SELECT * FROM accounts WHERE id = ?",
+								[req.params.id],
+								(error, results) => {
+									if (error) {
+										return res
+											.status(500)
+											.json({ error: "Internal server error" });
+									} else {
+										// Set default values if not provided
+										if (!username) {
+											username = results[0].username;
+										}
+										if (!email) {
+											email = results[0].email;
+										}
+										if (!/\S+@\S+\.\S+/.test(email)) {
+											return res
+												.status(403)
+												.json({ error: "Please enter a valid email address" });
+										}
+										if (!role) {
+											role = results[0].role;
+										}
+										if (!department) {
+											department = results[0].department;
+										}
+										if (isActive === "") {
+											isActive = results[0].isActive;
+										}
+										if (!profilePicture) {
+											profilePicture = results[0].profilePicture;
+										}
+										if (!password) {
+											password = results[0].password;
+										}
+
+										// Update account
+										pool.query(
+											"UPDATE accounts SET username = ?, email = ?, password = ?, department = ?, role = ?, isActive = ?, profile_picture = ?, date_updated = ? WHERE id = ?",
+											[
+												username,
+												email,
+												hashPassword(password),
+												department.toUpperCase(),
+												role.toUpperCase(),
+												isActive,
+												profilePicture,
+												date,
+												req.params.id,
+											],
+											(error, result) => {
+												if (error) {
+													console.log(error);
+													return res
+														.status(500)
+														.json({ error: "Internal server error" });
+												}
+												return res.status(200).json({
+													message: `Successfully updated ${results[0].username} account`,
+												});
+											}
+										);
+									}
+								}
+							);
+						}
+					}
+				);
 			}
 		}
 	);
 };
+
+// if (!username) {
+// 	username = results[0].username;
+// }
+// if (!email) {
+// 	email = results[0].email;
+// }
+// if (!/\S+@\S+\.\S+/.test(email)) {
+// 	return res
+// 		.status(403)
+// 		.json({ error: "Please enter a valid email address" });
+// }
+// if (!role) {
+// 	role = results[0].role;
+// }
+// if (!department) {
+// 	department = results[0].department;
+// }
+// if (isActive === "") {
+// 	isActive = results[0].isActive;
+// }
+// if (!profilePicture) {
+// 	profilePicture = results[0].profilePicture;
+// }
+// console.log({
+// 	username,
+// 	email,
+// 	password,
+// 	department,
+// 	role,
+// 	isActive,
+// 	profilePicture,
+// });
+// Update user data into the database
+// pool.query(
+// 	"UPDATE accounts SET username = ?, email = ?, password = ?, department = ?, role = ?, isActive = ?, profile_picture = ?, date_updated = ? WHERE id = ?",
+// 	[
+// 		username,
+// 		email,
+// 		hashPassword(password),
+// 		department,
+// 		role,
+// 		isActive,
+// 		profilePicture,
+// 		date,
+// 		req.params.id,
+// 	],
+// 	(error, results) => {
+// 		if (error) {
+// 			console.log(error);
+// 			return res
+// 				.status(500)
+// 				.json({ error: "Failed to update account" });
+// 		}
+// 		return res.status(201).json({
+// 			message: `Account ${username} updated successfully`,
+// 		});
+// 	}
+// );
