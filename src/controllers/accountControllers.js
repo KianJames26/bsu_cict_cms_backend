@@ -30,6 +30,13 @@ const hashPassword = (password) => {
 	return hash;
 };
 
+const setErrorField = (field, errorMessage) => {
+	return {
+		field: field,
+		errorMessage: errorMessage,
+	};
+};
+
 const checkUsernameAndEmail = (username, email, callback) => {
 	const query = "SELECT * FROM accounts WHERE username = ? OR email = ?";
 	pool.query(query, [username, email], (error, results) => {
@@ -39,14 +46,11 @@ const checkUsernameAndEmail = (username, email, callback) => {
 			const errors = [];
 			for (const result of results) {
 				if (result.username === username) {
-					errors.push({
-						field: "username",
-						message: "Username already exists",
-					});
+					errors.push(setErrorField("username", "Username already exists"));
 				}
 
 				if (result.email === email) {
-					errors.push({ field: "email", message: "Email already exists" });
+					errors.push(setErrorField("email", "Email already exists"));
 				}
 			}
 
@@ -154,21 +158,27 @@ module.exports.refreshTokenController = (req, res) => {};
 
 module.exports.createAccountController = (req, res) => {
 	const { username, email, password, department, role } = req.body;
-	const errorMessage = (message) => {
-		return res.status(400).json({ error: message });
-	};
+	let errors = [];
 	if (!username) {
-		errorMessage("Username is required");
-	} else if (!email) {
-		errorMessage("Email is required");
+		errors.push(setErrorField("username", "Username must be provided."));
+	}
+	if (!email) {
+		errors.push(setErrorField("email", "Email must be provided."));
 	} else if (!/\S+@\S+\.\S+/.test(email)) {
-		errorMessage("Please enter a valid email address");
-	} else if (!password) {
-		errorMessage("Password is required");
-	} else if (!department) {
-		errorMessage("Department is required");
-	} else if (!role) {
-		errorMessage("Role is required");
+		errors.push(setErrorField("email", "Enter a valid email address."));
+	}
+	if (!password) {
+		errors.push(setErrorField("password", "Password must be provided."));
+	}
+	if (!department) {
+		errors.push(setErrorField("department", "Department must be provided."));
+	}
+	if (!role) {
+		errors.push(setErrorField("role", "Role must be provided."));
+	}
+
+	if (errors) {
+		return res.status(400).json({ errors });
 	} else {
 		const date = getCurrentDateTime();
 		checkUsernameAndEmail(username, email, (error, errors) => {
@@ -222,7 +232,7 @@ module.exports.createAccountController = (req, res) => {
 };
 
 module.exports.editAccountController = (req, res) => {
-	let {
+	const {
 		username,
 		email,
 		password,
@@ -235,7 +245,7 @@ module.exports.editAccountController = (req, res) => {
 
 	// Check if username exists
 	pool.query(
-		"SELECT * FROM accounts WHERE username = ?",
+		"SELECT * FROM accounts WHERE username = ? AND id <> ?",
 		[username, req.params.id],
 		(error, usernameResults) => {
 			if (error) {
@@ -246,7 +256,7 @@ module.exports.editAccountController = (req, res) => {
 			} else {
 				// Check if email exists
 				pool.query(
-					"SELECT * FROM accounts WHERE email = ?",
+					"SELECT * FROM accounts WHERE email = ? AND id <> ?",
 					[email, req.params.id],
 					(error, emailResults) => {
 						if (error) {
@@ -265,50 +275,48 @@ module.exports.editAccountController = (req, res) => {
 											.json({ error: "Internal server error" });
 									} else {
 										// Set default values if not provided
-										if (!username) {
-											username = results[0].username;
-										}
-										if (!email) {
-											email = results[0].email;
-										}
 										if (!/\S+@\S+\.\S+/.test(email)) {
 											return res
 												.status(403)
 												.json({ error: "Please enter a valid email address" });
 										}
-										if (!role) {
-											role = results[0].role;
-										}
-										if (!department) {
-											department = results[0].department;
-										}
-										if (isActive === "") {
-											isActive = results[0].isActive;
-										}
-										if (!profilePicture) {
-											profilePicture = results[0].profilePicture;
-										}
-										if (!password) {
-											password = results[0].password;
-										}
+
+										const updatedData = {
+											username: username || results[0].username,
+											email: email || results[0].email,
+											password:
+												hashPassword(password) ||
+												hashPassword(results[0].password),
+											department: department || results[0].department,
+											role: role || results[0].role,
+											isActive:
+												isActive === true ||
+												isActive === false ||
+												isActive === 1 ||
+												isActive === 0
+													? isActive
+													: results[0].isActive,
+											profilePicture:
+												profilePicture || results[0].profilePicture,
+											date: date,
+										};
 
 										// Update account
 										pool.query(
 											"UPDATE accounts SET username = ?, email = ?, password = ?, department = ?, role = ?, isActive = ?, profile_picture = ?, date_updated = ? WHERE id = ?",
 											[
-												username,
-												email,
-												hashPassword(password),
-												department.toUpperCase(),
-												role.toUpperCase(),
-												isActive,
-												profilePicture,
-												date,
+												updatedData.username,
+												updatedData.email,
+												updatedData.password,
+												updatedData.department.toUpperCase(),
+												updatedData.role.toUpperCase(),
+												updatedData.isActive,
+												updatedData.profilePicture,
+												updatedData.date,
 												req.params.id,
 											],
 											(error, result) => {
 												if (error) {
-													console.log(error);
 													return res
 														.status(500)
 														.json({ error: "Internal server error" });
@@ -329,61 +337,4 @@ module.exports.editAccountController = (req, res) => {
 	);
 };
 
-// if (!username) {
-// 	username = results[0].username;
-// }
-// if (!email) {
-// 	email = results[0].email;
-// }
-// if (!/\S+@\S+\.\S+/.test(email)) {
-// 	return res
-// 		.status(403)
-// 		.json({ error: "Please enter a valid email address" });
-// }
-// if (!role) {
-// 	role = results[0].role;
-// }
-// if (!department) {
-// 	department = results[0].department;
-// }
-// if (isActive === "") {
-// 	isActive = results[0].isActive;
-// }
-// if (!profilePicture) {
-// 	profilePicture = results[0].profilePicture;
-// }
-// console.log({
-// 	username,
-// 	email,
-// 	password,
-// 	department,
-// 	role,
-// 	isActive,
-// 	profilePicture,
-// });
-// Update user data into the database
-// pool.query(
-// 	"UPDATE accounts SET username = ?, email = ?, password = ?, department = ?, role = ?, isActive = ?, profile_picture = ?, date_updated = ? WHERE id = ?",
-// 	[
-// 		username,
-// 		email,
-// 		hashPassword(password),
-// 		department,
-// 		role,
-// 		isActive,
-// 		profilePicture,
-// 		date,
-// 		req.params.id,
-// 	],
-// 	(error, results) => {
-// 		if (error) {
-// 			console.log(error);
-// 			return res
-// 				.status(500)
-// 				.json({ error: "Failed to update account" });
-// 		}
-// 		return res.status(201).json({
-// 			message: `Account ${username} updated successfully`,
-// 		});
-// 	}
-// );
+module.exports.inactivateAccountController = (req, res) => {};

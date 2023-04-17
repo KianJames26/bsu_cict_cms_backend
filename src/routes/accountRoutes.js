@@ -7,9 +7,14 @@ const {
 	logoutController,
 	createAccountController,
 	editAccountController,
+	inactivateAccountController,
 } = require("../controllers/accountControllers");
 const loginAuth = require("../middleware/loginAuth");
-const roleAuth = require("../middleware/roleAuth");
+const {
+	verifyRoleOnly,
+	verifyIdOnly,
+	verifyBoth,
+} = require("../middleware/roleAuth");
 
 // *Routes
 
@@ -23,8 +28,14 @@ router.post("/refresh-token", refreshTokenController);
 router.post("/logout", loginAuth, logoutController);
 
 // !Account Manipulation Route
-router.post("/", loginAuth, roleAuth("ADMIN"), createAccountController);
-router.put("/:id", loginAuth, roleAuth("ADMIN"), editAccountController);
+router.post("/", loginAuth, verifyRoleOnly("ADMIN"), createAccountController);
+router.put("/:id", loginAuth, verifyBoth("ADMIN"), editAccountController);
+router.delete(
+	"/:id",
+	loginAuth,
+	verifyRoleOnly("ADMIN"),
+	inactivateAccountController
+);
 
 //*Export Route
 module.exports = router;
