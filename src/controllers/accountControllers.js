@@ -65,9 +65,9 @@ module.exports.loginController = (req, res) => {
 
 	const queryString = `SELECT * FROM accounts WHERE username = ? OR email = ?`;
 
-	pool.query(queryString, [loginName, loginName], (err, results) => {
-		if (err) {
-			console.error(err);
+	pool.query(queryString, [loginName, loginName], (error, results) => {
+		if (error) {
+			console.error(error);
 			return res.status(500).json({ error: "Internal Server Error" });
 		}
 
@@ -79,13 +79,15 @@ module.exports.loginController = (req, res) => {
 
 		// check if the user is active
 		if (!user.isActive) {
-			return res.status(401).json({ error: "Account is not active" });
+			return res.status(401).json({ error: "Account was disabled" });
+		} else if (user.isArchive) {
+			return res.status(401).json({ error: "Account was deleted by admin" });
 		}
 
 		// compare the password with the stored hash
-		bcrypt.compare(password, user.password, (err, result) => {
-			if (err) {
-				console.error(err);
+		bcrypt.compare(password, user.password, (error, result) => {
+			if (error) {
+				console.error(error);
 				return res.status(500).json({ error: "Internal Server Error" });
 			}
 
@@ -95,13 +97,13 @@ module.exports.loginController = (req, res) => {
 
 			// generate JWT and refresh token
 			const accessToken = jwt.sign(
-				{ userId: user.id, role: user.role },
+				{ userId: user.id, role: user.role, department: user.department },
 				process.env.ACCESS_TOKEN_SECRET,
-				{ expiresIn: "5h" }
+				{ expiresIn: "1s" }
 			);
 
 			const refreshToken = jwt.sign(
-				{ userId: user.id, role: user.role },
+				{ userId: user.id },
 				process.env.REFRESH_TOKEN_SECRET
 			);
 
@@ -110,25 +112,25 @@ module.exports.loginController = (req, res) => {
 			pool.query(
 				saveRefreshTokenQuery,
 				[refreshToken, user.id],
-				(err, results) => {
-					if (err) {
-						console.error(err);
+				(error, results) => {
+					if (error) {
+						console.error(error);
 						return res.status(500).json({ error: "Internal Server Error" });
+					} else {
+						res
+							.status(200)
+							.cookie("accessToken", accessToken, {
+								maxAge: null,
+								httpOnly: true,
+							})
+							.cookie("refreshToken", refreshToken, {
+								maxAge: null,
+								httpOnly: true,
+							})
+							.json({ message: "Login successful", accessToken, refreshToken });
 					}
 				}
 			);
-
-			// return the JWT and refresh token
-			res
-				.cookie("accessToken", accessToken, {
-					maxAge: null,
-					httpOnly: true,
-				})
-				.cookie("refreshToken", refreshToken, {
-					maxAge: null,
-					httpOnly: true,
-				})
-				.json({ accessToken, refreshToken });
 		});
 	});
 };
@@ -139,22 +141,76 @@ module.exports.logoutController = (req, res) => {
 	pool.query(
 		"UPDATE accounts SET refresh_token = NULL WHERE id = ?",
 		[userId],
-		(err, results) => {
-			if (err) {
-				console.error(err);
+		(error, results) => {
+			if (error) {
+				console.error(error);
 				return res.status(500).json({ error: "Internal Server Error" });
+			} else {
+				res
+					.clearCookie("accessToken")
+					.clearCookie("refreshToken")
+					.json({ message: "Logout successful" });
 			}
-
-			// remove access token from client-side
-			res
-				.clearCookie("accessToken")
-				.clearCookie("refreshToken")
-				.json({ message: "Logout successful" });
 		}
+
+		// remove access token from client-side
 	);
 };
 
-module.exports.refreshTokenController = (req, res) => {};
+module.exports.refreshTokenController = (req, res) => {
+	const refreshToken = req.cookies.refreshToken;
+
+	jwt.verify(
+		refreshToken,
+		process.env.REFRESH_TOKEN_SECRET,
+		(error, decodedToken) => {
+			if (error) {
+				return res.status(401).json({ error: "Session expired" });
+			} else {
+				pool.query(
+					"SELECT * FROM accounts WHERE id = ?",
+					[decodedToken.userId],
+					(error, results) => {
+						if (error) {
+							return res.status(500).json({ error: "Internal Server Error" });
+						} else {
+							const user = results[0];
+
+							if (!user.isActive) {
+								return res.status(401).json({ error: "Account was disabled" });
+							} else if (user.isArchive) {
+								return res
+									.status(401)
+									.json({ error: "Account was deleted by admin" });
+							} else {
+								const accessToken = jwt.sign(
+									{
+										userId: user.id,
+										role: user.role,
+										department: user.department,
+									},
+									process.env.ACCESS_TOKEN_SECRET,
+									{ expiresIn: "15m" }
+								);
+
+								res
+									.status(200)
+									.cookie("accessToken", accessToken, {
+										maxAge: null,
+										httpOnly: true,
+									})
+									.json({
+										accessToken,
+										message: "Access Token Successfully refreshed",
+									});
+							}
+						}
+					}
+				);
+			}
+		}
+	);
+};
 
 module.exports.createAccountController = (req, res) => {
 	const { username, email, password, department, role } = req.body;
@@ -337,4 +393,38 @@ module.exports.editAccountController = (req, res) => {
 	);
 };
 
-module.exports.inactivateAccountController = (req, res) => {};
+module.exports.deleteAccountController = (req, res) => {
+	const userId = req.params.id;
+	const date = getCurrentDateTime();
+
+	pool.query(
+		"UPDATE accounts SET isArchive = ?, date_updated = ? WHERE id = ?",
+		[true, date, userId],
+		(error, result) => {
+			if (error) {
+				return res.status(500).json({ error: "Internal server error" });
+			} else {
+				return res
+					.status(200)
+					.json({ message: `Successfully deleted account ${userId}` });
+			}
+		}
+	);
+};
+module.exports.restoreAccountController = (req, res) => {
+	const userId = req.params.id;
+	const date = getCurrentDateTime();
+	pool.query(
+		"UPDATE accounts SET isArchive = ?, date_updated = ? WHERE id = ?",
+		[false, date, userId],
+		(error, result) => {
+			if (error) {
+				return res.status(500).json({ error: "Internal server error" });
+			} else {
+				return res
+					.status(200)
+					.json({ message: `Successfully restored account ${userId}` });
+			}
+		}
+	);
+};

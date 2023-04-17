@@ -7,7 +7,8 @@ const {
 	logoutController,
 	createAccountController,
 	editAccountController,
-	inactivateAccountController,
+	deleteAccountController,
+	restoreAccountController,
 } = require("../controllers/accountControllers");
 const loginAuth = require("../middleware/loginAuth");
 const {
@@ -22,6 +23,7 @@ const {
 router.post("/login", loginController);
 
 // !Refresh Token Route
+//TokenExpiredError
 router.post("/refresh-token", refreshTokenController);
 
 // !Logout Route
@@ -34,7 +36,13 @@ router.delete(
 	"/:id",
 	loginAuth,
 	verifyRoleOnly("ADMIN"),
-	inactivateAccountController
+	deleteAccountController
+);
+router.put(
+	"/restore/:id",
+	loginAuth,
+	verifyRoleOnly("ADMIN"),
+	restoreAccountController
 );
 
 //*Export Route
