@@ -9,6 +9,8 @@ const {
 	editAccountController,
 	deleteAccountController,
 	restoreAccountController,
+	getAccountsController,
+	getAccountController,
 } = require("../controllers/accountControllers");
 const loginAuth = require("../middleware/loginAuth");
 const {
@@ -30,6 +32,9 @@ router.post("/refresh-token", refreshTokenController);
 router.post("/logout", loginAuth, logoutController);
 
 // !Account Manipulation Route
+router
+	.get("/", loginAuth, verifyRoleOnly("ADMIN"), getAccountsController)
+	.get("/:id", loginAuth, verifyBoth("ADMIN"), getAccountController);
 router.post("/", loginAuth, verifyRoleOnly("ADMIN"), createAccountController);
 router.put("/:id", loginAuth, verifyBoth("ADMIN"), editAccountController);
 router.delete(

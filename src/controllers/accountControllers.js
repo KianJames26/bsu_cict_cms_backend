@@ -411,6 +411,7 @@ module.exports.deleteAccountController = (req, res) => {
 		}
 	);
 };
+
 module.exports.restoreAccountController = (req, res) => {
 	const userId = req.params.id;
 	const date = getCurrentDateTime();
@@ -424,6 +425,32 @@ module.exports.restoreAccountController = (req, res) => {
 				return res
 					.status(200)
 					.json({ message: `Successfully restored account ${userId}` });
+			}
+		}
+	);
+};
+
+module.exports.getAccountsController = (req, res) => {
+	pool.query("SELECT * FROM accounts", (error, result) => {
+		if (error) {
+			return res.status(500).json({ error: "Internal server error" });
+		} else {
+			return res.status(200).json(result);
+		}
+	});
+};
+
+module.exports.getAccountController = (req, res) => {
+	const userId = req.params.id;
+
+	pool.query(
+		"SELECT * FROM accounts WHERE id = ?",
+		[userId],
+		(error, result) => {
+			if (error) {
+				return res.status(500).json({ error: "Internal server error" });
+			} else {
+				return res.status(200).json(result[0]);
 			}
 		}
 	);
