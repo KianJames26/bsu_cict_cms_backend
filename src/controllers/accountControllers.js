@@ -1,8 +1,10 @@
+//* Package Imports
 const mysql = require("mysql2");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { v4: uuidv4 } = require("uuid");
 
+//* Database Pool
 const pool = mysql.createPool({
 	connectionLimit: 10,
 	host: process.env.DB_HOST,
@@ -12,6 +14,7 @@ const pool = mysql.createPool({
 	database: process.env.DB_NAME,
 });
 
+//* Helper Functions
 const getCurrentDateTime = () => {
 	const now = new Date();
 	const year = now.getFullYear();
@@ -72,7 +75,7 @@ module.exports.loginController = (req, res) => {
 		}
 
 		if (results.length === 0) {
-			return res.status(401).json({ error: "Invalid Username or Password" });
+			return res.status(401).json({ error: "Invalid Username" });
 		}
 
 		const user = results[0];
@@ -92,14 +95,14 @@ module.exports.loginController = (req, res) => {
 			}
 
 			if (!result) {
-				return res.status(401).json({ error: "Invalid Username or Password" });
+				return res.status(401).json({ error: "Invalid Password" });
 			}
 
 			// generate JWT and refresh token
 			const accessToken = jwt.sign(
 				{ userId: user.id, role: user.role, department: user.department },
 				process.env.ACCESS_TOKEN_SECRET,
-				{ expiresIn: "1s" }
+				{ expiresIn: "15m" }
 			);
 
 			const refreshToken = jwt.sign(

@@ -6,14 +6,19 @@ module.exports = (req, res, next) => {
 	jwt.verify(
 		accessToken,
 		process.env.ACCESS_TOKEN_SECRET,
-		(err, decodedToken) => {
-			if (err) {
-				return res.status(401).json({ error: err.name });
+		(error, decodedToken) => {
+			if (error) {
+				if (error.name === "TokenExpiredError") {
+					return res.status(401).json({ error: "Access token has expired" });
+				} else {
+					return res.status(401).json({ error: "Please login first" });
+				}
+			} else {
+				res.locals.userId = decodedToken.userId;
+				res.locals.userRole = decodedToken.role;
+				res.locals.userDepartment = decodedToken.department;
+				next();
 			}
-
-			res.locals.userId = decodedToken.userId;
-			res.locals.userRole = decodedToken.role;
-			next();
 		}
 	);
 };

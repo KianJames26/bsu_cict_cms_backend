@@ -1,6 +1,8 @@
+//* PACKAGE IMPORTS
 const express = require("express");
 const router = express.Router();
 
+//* CONTROLLER IMPORTS
 const {
 	loginController,
 	refreshTokenController,
@@ -12,6 +14,8 @@ const {
 	getAccountsController,
 	getAccountController,
 } = require("../controllers/accountControllers");
+
+//* MIDDLEWARE IMPORTS
 const loginAuth = require("../middleware/loginAuth");
 const {
 	verifyRoleOnly,
@@ -19,30 +23,55 @@ const {
 	verifyBoth,
 } = require("../middleware/roleAuth");
 
-// *Routes
+//* HEHLPER IMPORTS
 
-// !Login Route
-router.post("/login", loginController);
+const { initMulter } = require("../helpers/multerHelper");
+const upload = initMulter();
 
-// !Refresh Token Route
+//* ROUTES
+//! Login Route
+router.post("/login", upload.none(), loginController);
+
+//! Refresh Token Route
 //TokenExpiredError
 router.post("/refresh-token", refreshTokenController);
 
-// !Logout Route
+//! Logout Route
 router.post("/logout", loginAuth, logoutController);
 
-// !Account Manipulation Route
+//! Account Manipulation Route
+//? Create
+router.post(
+	"/",
+	loginAuth,
+	verifyRoleOnly("ADMIN"),
+	upload.none(),
+	createAccountController
+);
+
+//? Read
 router
 	.get("/", loginAuth, verifyRoleOnly("ADMIN"), getAccountsController)
 	.get("/:id", loginAuth, verifyBoth("ADMIN"), getAccountController);
-router.post("/", loginAuth, verifyRoleOnly("ADMIN"), createAccountController);
-router.put("/:id", loginAuth, verifyBoth("ADMIN"), editAccountController);
+
+//? Update
+router.put(
+	"/:id",
+	loginAuth,
+	verifyBoth("ADMIN"),
+	upload.none(),
+	editAccountController
+);
+
+//? Delete
 router.delete(
 	"/:id",
 	loginAuth,
 	verifyRoleOnly("ADMIN"),
 	deleteAccountController
 );
+
+//? Restore
 router.put(
 	"/restore/:id",
 	loginAuth,
@@ -50,5 +79,5 @@ router.put(
 	restoreAccountController
 );
 
-//*Export Route
+//* Export Route
 module.exports = router;

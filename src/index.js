@@ -1,10 +1,16 @@
+//* PACKAGE IMPORTS
 require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cookieParser = require("cookie-parser");
 
+//* ROUTE IMPORTS
+const accountRoutes = require("./routes/accountRoutes");
+const subjectRoutes = require("./routes/subjectRoutes");
+
 const app = express();
-//*Create Database Connection Pool
+
+//* DATABASE POOL
 
 const pool = mysql.createPool({
 	connectionLimit: 10,
@@ -15,7 +21,7 @@ const pool = mysql.createPool({
 	database: process.env.DB_NAME,
 });
 
-//*Connect to Database Pool
+//* CONNECT TO DATABASE POOL
 
 pool.getConnection((err, connection) => {
 	if (err) {
@@ -29,21 +35,16 @@ pool.getConnection((err, connection) => {
 	}
 });
 
-//*Routes
+app.use(express.json());
+app.use(cookieParser());
+
+//* ROUTES
 
 app.get("/test", (req, res) => {
 	res.send(
 		`Test successful! Server running on port ${process.env.PORT || "3535"}`
 	);
-
-	// bcrypt.genSalt(10, (err, salt) => {
-	// 	bcrypt.hash("cictadmin", salt, (err, hash) => {
-	// 		console.log(hash);
-	// 	});
-	// });
 });
 
-const accountRoutes = require("./routes/accountRoutes");
-app.use(express.json());
-app.use(cookieParser());
 app.use("/account", accountRoutes);
+app.use("/subject", subjectRoutes);

@@ -42,4 +42,16 @@ module.exports.verifyBoth = (role) => {
 	};
 };
 
-// module.exports = verifyRoleOnly;
+module.exports.verifyRoles = (roles) => {
+	return (req, res, next) => {
+		const userRole = res.locals.userRole;
+
+		if (roles.includes(userRole)) {
+			next();
+		} else {
+			return res
+				.status(403)
+				.send({ error: "User is not authorized to perform this action." });
+		}
+	};
+};
