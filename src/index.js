@@ -24,16 +24,19 @@ const pool = mysql.createPool({
 
 //* CONNECT TO DATABASE POOL
 
-pool.getConnection((err, connection) => {
-	if (err) {
-		console.log(err);
-	} else {
-		connection.release();
-		app.listen(process.env.PORT || "3535", process.env.HOST, () => {
-			console.log(`Server running on port ${process.env.PORT || "3535"}`);
-		});
-		console.log("Application successfully connected to cms_db");
-	}
+// pool.getConnection((err, connection) => {
+// 	if (err) {
+// 		console.log(err);
+// 	} else {
+// 		connection.release();
+// 		app.listen(process.env.PORT || "3535", process.env.HOST, () => {
+// 			console.log(`Server running on port ${process.env.PORT || "3535"}`);
+// 		});
+// 		console.log("Application successfully connected to cms_db");
+// 	}
+// });
+app.listen(process.env.PORT || "3535", process.env.HOST, () => {
+	console.log(`Server running on port ${process.env.PORT || "3535"}`);
 });
 
 app.use(express.json());
