@@ -3,6 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const mysql = require("mysql2");
 const cookieParser = require("cookie-parser");
+const expressUploader = require("express-fileupload");
 
 //* ROUTE IMPORTS
 const accountRoutes = require("./routes/accountRoutes");
@@ -38,6 +39,7 @@ pool.getConnection((err, connection) => {
 
 app.use(express.json());
 app.use(cookieParser());
+app.use(expressUploader());
 
 //* ROUTES
 
@@ -45,6 +47,11 @@ app.get("/test", (req, res) => {
 	res.send(
 		`Test successful! Server running on port ${process.env.PORT || "3535"}`
 	);
+});
+app.post("/test", (req, res) => {
+	console.log(req.files);
+
+	return res.status(200).send(req.files);
 });
 
 app.use("/account", accountRoutes);

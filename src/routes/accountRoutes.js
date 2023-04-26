@@ -25,12 +25,9 @@ const {
 
 //* HEHLPER IMPORTS
 
-const { initMulter } = require("../helpers/multerHelper");
-const upload = initMulter();
-
 //* ROUTES
 //! Login Route
-router.post("/login", upload.none(), loginController);
+router.post("/login", loginController);
 
 //! Refresh Token Route
 //TokenExpiredError
@@ -41,13 +38,7 @@ router.post("/logout", loginAuth, logoutController);
 
 //! Account Manipulation Route
 //? Create
-router.post(
-	"/",
-	loginAuth,
-	verifyRoleOnly("ADMIN"),
-	upload.none(),
-	createAccountController
-);
+router.post("/", loginAuth, verifyRoleOnly("ADMIN"), createAccountController);
 
 //? Read
 router
@@ -55,13 +46,7 @@ router
 	.get("/:id", loginAuth, verifyBoth("ADMIN"), getAccountController);
 
 //? Update
-router.put(
-	"/:id",
-	loginAuth,
-	verifyBoth("ADMIN"),
-	upload.none(),
-	editAccountController
-);
+router.put("/:id", loginAuth, verifyBoth("ADMIN"), editAccountController);
 
 //? Delete
 router.delete(

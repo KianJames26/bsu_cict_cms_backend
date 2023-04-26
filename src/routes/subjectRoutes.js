@@ -18,8 +18,6 @@ const loginAuth = require("../middleware/loginAuth");
 const { verifyRoles } = require("../middleware/roleAuth");
 
 //* HELPER IMPORTS
-const { initMulter } = require("../helpers/multerHelper");
-const upload = initMulter();
 
 //* ROUTES
 
@@ -29,7 +27,6 @@ router.post(
 	"/",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER"]),
-	upload.single("syllabus"),
 	createSubjectController
 );
 
@@ -48,7 +45,6 @@ router.put(
 	"/:subjectCode",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER"]),
-	upload.single("syllabus"),
 	updateSubjectController
 );
 

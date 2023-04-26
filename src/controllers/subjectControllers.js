@@ -1,6 +1,7 @@
 //* Package Imports
 const mysql = require("mysql2");
 const path = require("path");
+const fetch = require("node-fetch");
 const fs = require("fs");
 
 //* Database Pool
@@ -32,7 +33,7 @@ const setErrorField = (field, errorMessage) => {
 };
 
 module.exports.createSubjectController = (req, res) => {
-	const file = req.file;
+	const file = req.files.syllabus;
 	const department = res.locals.userDepartment;
 	const { subjectCode, subjectName } = req.body;
 	const date = getCurrentDateTime();
@@ -76,8 +77,8 @@ module.exports.createSubjectController = (req, res) => {
 						setErrorField("syllabus", "Please upload a pdf file for syllabus")
 					);
 				} else {
-					const fileExtension = path.extname(file.originalname);
-					const fileSize = req.file.size;
+					const fileExtension = path.extname(file.name);
+					const fileSize = file.size;
 					if (fileExtension !== ".pdf") {
 						errors.push(
 							setErrorField("syllabus", "Please upload pdf file only!")
@@ -92,18 +93,20 @@ module.exports.createSubjectController = (req, res) => {
 				if (errors.length > 0) {
 					return res.status(400).json(errors);
 				} else {
-					const fileExtension = path.extname(file.originalname);
-
-					const fileName = `${subjectCode} ${department} Syllabus${fileExtension}`;
-					const filePath = path.join(__dirname, "../../uploads/", fileName);
-					fs.writeFile(filePath, file.buffer, (err) => {
-						if (err) {
-							console.error(err);
-							return res.status(500).json({ error: "Error while saving file" });
-						} else {
+					fetch(
+						`https://www.filestackapi.com/api/store/S3?key=${process.env.FILESTACK_API_KEY}`,
+						{
+							method: "POST",
+							headers: { "Content-Type": "application/pdf" },
+							body: file.data,
+						}
+					)
+						.then((response) => response.json())
+						.then((json) => {
+							const fileDirectory = json.url;
 							pool.query(
 								"INSERT INTO subjects (subject_code, subject_name, syllabus, department, date_created) VALUES (?, ?, ?, ?, ?)",
-								[subjectCode, subjectName, filePath, department, date],
+								[subjectCode, subjectName, fileDirectory, department, date],
 								(error, results) => {
 									if (error) {
 										console.error(error);
@@ -115,11 +118,7 @@ module.exports.createSubjectController = (req, res) => {
 									}
 								}
 							);
-						}
-
-						// Insert subject information into the database
-					});
-					// console.log(fileName);
+						});
 				}
 			}
 		}
