@@ -7,6 +7,7 @@ const cookieParser = require("cookie-parser");
 //* ROUTE IMPORTS
 const accountRoutes = require("./routes/accountRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
+const curriculumRoutes = require("./routes/curriculumRoutes");
 
 const app = express();
 
@@ -28,7 +29,7 @@ pool.getConnection((err, connection) => {
 		console.log(err);
 	} else {
 		connection.release();
-		app.listen(process.env.PORT || "3535", () => {
+		app.listen(process.env.PORT || "3535", process.env.HOST, () => {
 			console.log(`Server running on port ${process.env.PORT || "3535"}`);
 		});
 		console.log("Application successfully connected to cms_db");
@@ -48,3 +49,4 @@ app.get("/test", (req, res) => {
 
 app.use("/account", accountRoutes);
 app.use("/subject", subjectRoutes);
+app.use("/curriculum", curriculumRoutes);

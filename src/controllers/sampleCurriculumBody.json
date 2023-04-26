@@ -1,0 +1,36 @@
+{
+	"curriculumTitle": "Curriculum Title",
+	"curriculumVersion": "v1",
+	"curriculumStatus": "ONGOING",
+	"department": "BSIT",
+	"subjects": {
+		"firstYear": {
+			"firstSemester": [
+				{
+					"subjectCode": "IT 101",
+					"lectureUnits": 3.0,
+					"laboratoryUnits": 0.0,
+					"hoursPerWeek": 3,
+					"prerequisites": ["IT 202", "IT 203"],
+					"corequisite": ["IT 102", "IT 103"]
+				}
+			],
+			"secondSemester": []
+		},
+
+		"secondYear": {
+			"firstSemester": [],
+			"secondSemester": []
+		},
+
+		"thirdYear": {
+			"firstSemester": [],
+			"secondSemester": []
+		},
+
+		"fourthYear": {
+			"firstSemester": [],
+			"secondSemester": []
+		}
+	}
+}
