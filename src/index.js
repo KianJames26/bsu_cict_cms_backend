@@ -49,9 +49,13 @@ app.get("/test", (req, res) => {
 	);
 });
 app.post("/test", (req, res) => {
-	console.log(req.files);
-
-	return res.status(200).send(req.files);
+	pool.query("SELECT * FROM prerequisites", (error, result) => {
+		if (error) {
+			return res.status(500).json({ error: "Internal server error" });
+		} else {
+			return res.status(200).json(result);
+		}
+	});
 });
 
 app.use("/account", accountRoutes);
