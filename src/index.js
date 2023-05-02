@@ -4,6 +4,7 @@ const express = require("express");
 const mysql = require("mysql2");
 const cookieParser = require("cookie-parser");
 const expressUploader = require("express-fileupload");
+const cors = require("cors");
 
 //* ROUTE IMPORTS
 const accountRoutes = require("./routes/accountRoutes");
