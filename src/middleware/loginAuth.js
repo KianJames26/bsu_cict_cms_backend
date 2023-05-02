@@ -1,11 +1,7 @@
 const jwt = require("jsonwebtoken");
-const LocalStorage = require("node-localstorage").LocalStorage;
-
-localStorage = new LocalStorage("./scratch");
 
 module.exports = (req, res, next) => {
-	const accessToken =
-		localStorage.getItem("accessToken") || req.cookies.accessToken;
+	const accessToken = req.header("x-access-token") || req.cookies.accessToken;
 
 	jwt.verify(
 		accessToken,
