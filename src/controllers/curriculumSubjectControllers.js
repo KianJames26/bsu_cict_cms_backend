@@ -90,6 +90,6 @@ module.exports.addSubjectController = (req, res) => {
 		);
 	}
 };
-module.exports.removeSubjectController = (req, res)={
-  
-};
+// module.exports.removeSubjectController = (req, res)={
+
+// };
