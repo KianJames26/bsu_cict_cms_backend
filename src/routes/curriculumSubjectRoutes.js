@@ -5,6 +5,7 @@ const router = express.Router();
 //* CONTROLLER IMPORTS
 const {
 	addSubjectController,
+	removeSubjectController,
 } = require("../controllers/curriculumSubjectControllers");
 
 //* MIDDLEWARE IMPORTS
@@ -22,5 +23,14 @@ router.post(
 	verifyRoles(["CHAIR", "MEMBER"]),
 	curriculumStatusCheck,
 	addSubjectController
+);
+
+//? Remove Subject
+router.delete(
+	"/:curriculumId/:subjectCode",
+	loginAuth,
+	verifyRoles(["CHAIR", "MEMBER"]),
+	curriculumStatusCheck,
+	removeSubjectController
 );
 module.exports = router;

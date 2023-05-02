@@ -90,6 +90,62 @@ module.exports.addSubjectController = (req, res) => {
 		);
 	}
 };
-// module.exports.removeSubjectController = (req, res)={
+module.exports.removeSubjectController = (req, res) => {
+	const curriculumId = req.params.curriculumId;
+	const subjectCode = req.params.subjectCode;
 
-// };
+	pool.query(
+		"SELECT prerequisites, corequisites FROM curriculum_subjects WHERE curriculum_id = ? AND subject_code = ?",
+		[curriculumId, subjectCode],
+		(error, results) => {
+			if (error) {
+				return res.status(500).json(error);
+			} else {
+				const prerequisites = results[0].prerequisites;
+				const corequisites = results[0].corequisites;
+				let errors = [];
+
+				if (prerequisites !== null) {
+					pool.query(
+						"DELETE FROM prerequisites WHERE prerequisite_id = ?",
+						[prerequisites],
+						(error, results) => {
+							if (error) {
+								errors.push(error);
+							}
+						}
+					);
+				}
+				if (corequisites !== null) {
+					pool.query(
+						"DELETE FROM corequisites WHERE corequisite_id = ?",
+						[corequisites],
+						(error, results) => {
+							if (error) {
+								errors.push(error);
+							}
+						}
+					);
+				}
+
+				if (errors.length > 0) {
+					return res.status(500).json(errors);
+				} else {
+					pool.query(
+						"DELETE FROM curriculum_subjects WHERE curriculum_id = ? AND subject_code = ?",
+						[curriculumId, subjectCode],
+						(error, results) => {
+							if (error) {
+								return res.status(500).json(error);
+							} else {
+								return res
+									.status(200)
+									.json({ message: "Subject Removed Successfully" });
+							}
+						}
+					);
+				}
+			}
+		}
+	);
+};

@@ -93,8 +93,9 @@ module.exports.createSubjectController = (req, res) => {
 				if (errors.length > 0) {
 					return res.status(400).json(errors);
 				} else {
+					const fileName = `${subjectCode} Syllabus.pdf`;
 					fetch(
-						`https://www.filestackapi.com/api/store/S3?key=${process.env.FILESTACK_API_KEY}`,
+						`https://www.filestackapi.com/api/store/S3?key=${process.env.FILESTACK_API_KEY}&filename=${fileName}`,
 						{
 							method: "POST",
 							headers: { "Content-Type": "application/pdf" },
