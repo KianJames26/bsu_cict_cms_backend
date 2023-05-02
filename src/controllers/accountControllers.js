@@ -235,7 +235,7 @@ module.exports.createAccountController = (req, res) => {
 		errors.push(setErrorField("role", "Role must be provided."));
 	}
 
-	if (errors) {
+	if (errors.length > 0) {
 		return res.status(400).json({ errors });
 	} else {
 		const date = getCurrentDateTime();
