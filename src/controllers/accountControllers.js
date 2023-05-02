@@ -101,8 +101,7 @@ module.exports.loginController = (req, res) => {
 			// generate JWT and refresh token
 			const accessToken = jwt.sign(
 				{ userId: user.id, role: user.role, department: user.department },
-				process.env.ACCESS_TOKEN_SECRET,
-				{ expiresIn: "15m" }
+				process.env.ACCESS_TOKEN_SECRET
 			);
 
 			const refreshToken = jwt.sign(

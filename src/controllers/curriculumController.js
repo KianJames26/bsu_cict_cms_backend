@@ -293,4 +293,45 @@ module.exports.getCurriculumController = (req, res) => {
 	);
 };
 
-module.exports.updateCurriculumController = (req, res) => {};
+module.exports.updateCurriculumController = (req, res) => {
+	const curriculumId = req.params.id;
+	const { curriculumTitle, curriculumVersion, curriculumStatus } = req.body;
+	const date = getCurrentDateTime();
+
+	pool.query(
+		"SELECT * FROM curriculums WHERE curriculum_id = ?",
+		[curriculumId],
+		(error, result) => {
+			if (error) {
+				console.log(error);
+				return res.status(500).json({ error: "Internal Server Error" });
+			} else {
+				const newCurriculumInfo = {
+					curriculumTitle: curriculumTitle || result[0].curriculum_title,
+					curriculumVersion: curriculumVersion || result[0].curriculum_version,
+					currciulumStatus:
+						curriculumStatus.toUpperCase() || result[0].curriculum_status,
+					dateUpdated: date,
+				};
+				pool.query(
+					"UPDATE curriculums SET curriculum_title = ?, curriculum_version = ?, curriculum_status = ?, date_updated = ? WHERE curriculum_id = ?",
+					[
+						newCurriculumInfo.curriculumTitle,
+						newCurriculumInfo.curriculumVersion,
+						newCurriculumInfo.currciulumStatus,
+						newCurriculumInfo.dateUpdated,
+						curriculumId,
+					],
+					(error, result) => {
+						if (error) {
+							console.log(error);
+							return res.status(500).json({ error: "Internal Server Error" });
+						} else {
+							return res.status(200).json({ message: "Successfully updated" });
+						}
+					}
+				);
+			}
+		}
+	);
+};
