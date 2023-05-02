@@ -2,7 +2,6 @@
 const mysql = require("mysql2");
 const path = require("path");
 const fetch = require("node-fetch");
-const fs = require("fs");
 
 //* Database Pool
 const pool = mysql.createPool({
@@ -192,22 +191,25 @@ module.exports.updateSubjectController = (req, res) => {
 			} else {
 				const fileExtension = path.extname(file.originalname);
 
-				const fileName = `${code} ${department} Syllabus${fileExtension}`;
-				const filePath = path.join(__dirname, "../../uploads/", fileName);
-				fs.writeFile(filePath, file.buffer, (err) => {
-					if (err) {
-						console.error(err);
-						return res.status(500).json({ error: "Error while saving file" });
-					} else {
+				const fileName = `${subjectCode} Syllabus.pdf`;
+				fetch(
+					`https://www.filestackapi.com/api/store/S3?key=${process.env.FILESTACK_API_KEY}&filename=${fileName}`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/pdf" },
+						body: file.data,
+					}
+				)
+					.then((response) => response.json())
+					.then((json) => {
+						const fileDirectory = json.url;
 						pool.query(
 							"UPDATE subjects SET subject_code = ?, subject_name = ?, syllabus = ? WHERE subject_code = ?",
-							[code, subjectName, filePath, subject],
+							[code, subjectName, fileDirectory, subject],
 							(error, results) => {
 								if (error) {
 									console.error(error);
-									return res
-										.status(500)
-										.json({ error: "Error while inserting into database" });
+									return res.status(500).json({ error });
 								} else {
 									return res
 										.status(200)
@@ -215,8 +217,7 @@ module.exports.updateSubjectController = (req, res) => {
 								}
 							}
 						);
-					}
-				});
+					});
 			}
 		}
 	};
