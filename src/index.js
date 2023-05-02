@@ -9,6 +9,7 @@ const expressUploader = require("express-fileupload");
 const accountRoutes = require("./routes/accountRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
 const curriculumRoutes = require("./routes/curriculumRoutes");
+const curriculumSubjectRoutes = require("./routes/curriculumSubjectRoutes");
 
 const app = express();
 
@@ -37,6 +38,7 @@ pool.getConnection((err, connection) => {
 	}
 });
 
+app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 app.use(expressUploader());
@@ -49,7 +51,7 @@ app.get("/test", (req, res) => {
 	);
 });
 app.post("/test", (req, res) => {
-	pool.query("SELECT * FROM prerequisites", (error, result) => {
+	pool.query("select * from prerequisites", (error, result) => {
 		if (error) {
 			return res.status(500).json({ error: "Internal server error" });
 		} else {
@@ -61,3 +63,4 @@ app.post("/test", (req, res) => {
 app.use("/account", accountRoutes);
 app.use("/subject", subjectRoutes);
 app.use("/curriculum", curriculumRoutes);
+app.use("/curriculum-subject", curriculumSubjectRoutes);
