@@ -71,7 +71,7 @@ module.exports.createCurriculumController = (req, res) => {
 			[id, curriculumTitle, curriculumVersion, department, date],
 			(error, result) => {
 				if (error) {
-					return res.status(500).json({ error: "Internal server error" });
+					return res.status(500).json(error);
 				} else {
 					const firstYear = subjects.firstYear;
 					const secondYear = subjects.secondYear;
@@ -198,7 +198,7 @@ module.exports.getCurriculumsController = (req, res) => {
 		[department],
 		(error, results) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else {
 				return res.status(200).json(results);
 			}
@@ -214,14 +214,14 @@ module.exports.getCurriculumController = (req, res) => {
 		[curriculumId],
 		(error, curriculum) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else {
 				pool.query(
 					"SELECT * FROM curriculum_subjects WHERE curriculum_id = ?",
 					[curriculumId],
 					(error, subjects) => {
 						if (error) {
-							return res.status(500).json({ error: "Internal Server Error" });
+							return res.status(500).json(error);
 						} else {
 							let curriculumInfo = {
 								curriculumTitle: curriculum[0].curriculum_title,
@@ -310,7 +310,7 @@ module.exports.updateCurriculumController = (req, res) => {
 		(error, result) => {
 			if (error) {
 				console.log(error);
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else {
 				const newCurriculumInfo = {
 					curriculumTitle: curriculumTitle || result[0].curriculum_title,
@@ -331,7 +331,7 @@ module.exports.updateCurriculumController = (req, res) => {
 					(error, result) => {
 						if (error) {
 							console.log(error);
-							return res.status(500).json({ error: "Internal Server Error" });
+							return res.status(500).json(error);
 						} else {
 							return res.status(200).json({ message: "Successfully updated" });
 						}

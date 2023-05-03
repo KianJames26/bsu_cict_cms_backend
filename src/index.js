@@ -11,6 +11,7 @@ const accountRoutes = require("./routes/accountRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
 const curriculumRoutes = require("./routes/curriculumRoutes");
 const curriculumSubjectRoutes = require("./routes/curriculumSubjectRoutes");
+const commentRoutes = require("./routes/commentRoutes");
 
 const app = express();
 
@@ -65,3 +66,4 @@ app.use("/account", accountRoutes);
 app.use("/subject", subjectRoutes);
 app.use("/curriculum", curriculumRoutes);
 app.use("/curriculum-subject", curriculumSubjectRoutes);
+app.use("/comment", commentRoutes);

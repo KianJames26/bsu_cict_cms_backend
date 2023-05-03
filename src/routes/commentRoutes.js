@@ -4,41 +4,39 @@ const router = express.Router();
 
 //* CONTROLLER IMPORTS
 const {
-	createCurriculumController,
-	getCurriculumsController,
-	getCurriculumController,
-	updateCurriculumController,
-} = require("../controllers/curriculumController");
+	addCommentController,
+	getCommentsController,
+	getCommentController,
+} = require("../controllers/commentControllers");
 
 //* MIDDLEWARE IMPORTS
 const loginAuth = require("../middleware/loginAuth");
 const { verifyRoles } = require("../middleware/roleAuth");
+const { checkPublished } = require("../middleware/curriculumStatusCheck");
 
 //* ROUTES
 
-//! CURRICULUM MANIPULATION ROUTES
+//! COMMENT MANIPULATION ROUTE
 //? CREATE
-router.post("/", loginAuth, verifyRoles(["CHAIR"]), createCurriculumController);
-
+router.post(
+	"/:curriculumId",
+	loginAuth,
+	verifyRoles(["STAKEHOLDER"]),
+	checkPublished,
+	addCommentController
+);
 //? READ
 router.get(
-	"/",
+	"/:curriculumId",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER", "STAKEHOLDER"]),
-	getCurriculumsController
+	getCommentsController
 );
 router.get(
-	"/:id",
+	"/:curriculumId/:commentId",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER", "STAKEHOLDER"]),
-	getCurriculumController
+	getCommentController
 );
 
-//? UPDATE
-router.put(
-	"/:id",
-	loginAuth,
-	verifyRoles(["CHAIR", "MEMBER"]),
-	updateCurriculumController
-);
 module.exports = router;

@@ -70,8 +70,7 @@ module.exports.loginController = (req, res) => {
 
 	pool.query(queryString, [loginName, loginName], (error, results) => {
 		if (error) {
-			console.error(error);
-			return res.status(500).json({ error: "Internal Server Error" });
+			return res.status(500).json(error);
 		}
 
 		if (results.length === 0) {
@@ -90,8 +89,7 @@ module.exports.loginController = (req, res) => {
 		// compare the password with the stored hash
 		bcrypt.compare(password, user.password, (error, result) => {
 			if (error) {
-				console.error(error);
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			}
 
 			if (!result) {
@@ -116,8 +114,7 @@ module.exports.loginController = (req, res) => {
 				[refreshToken, user.id],
 				(error, results) => {
 					if (error) {
-						console.error(error);
-						return res.status(500).json({ error: "Internal Server Error" });
+						return res.status(500).json(error);
 					} else {
 						res
 							.status(200)
@@ -145,8 +142,7 @@ module.exports.logoutController = (req, res) => {
 		[userId],
 		(error, results) => {
 			if (error) {
-				console.error(error);
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else {
 				res
 					.clearCookie("accessToken")
@@ -174,7 +170,7 @@ module.exports.refreshTokenController = (req, res) => {
 					[decodedToken.userId],
 					(error, results) => {
 						if (error) {
-							return res.status(500).json({ error: "Internal Server Error" });
+							return res.status(500).json(error);
 						} else {
 							const user = results[0];
 
@@ -241,8 +237,7 @@ module.exports.createAccountController = (req, res) => {
 		const date = getCurrentDateTime();
 		checkUsernameAndEmail(username, email, (error, errors) => {
 			if (error) {
-				console.log(error);
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else if (errors.length > 0) {
 				return res.status(400).json({ errors });
 			} else {
@@ -275,8 +270,7 @@ module.exports.createAccountController = (req, res) => {
 					],
 					(error, results) => {
 						if (error) {
-							console.log(error);
-							return res.status(500).json({ error: "Internal server error" });
+							return res.status(500).json(error);
 						} else {
 							return res
 								.status(201)
@@ -307,7 +301,7 @@ module.exports.editAccountController = (req, res) => {
 		[username, req.params.id],
 		(error, usernameResults) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			}
 			if (usernameResults.length > 0) {
 				return res.status(403).json({ error: "Username already exists" });
@@ -318,7 +312,7 @@ module.exports.editAccountController = (req, res) => {
 					[email, req.params.id],
 					(error, emailResults) => {
 						if (error) {
-							return res.status(500).json({ error: "Internal server error" });
+							return res.status(500).json(error);
 						}
 						if (emailResults.length > 0) {
 							return res.status(403).json({ error: "Email already exists" });
@@ -404,7 +398,7 @@ module.exports.deleteAccountController = (req, res) => {
 		[true, date, userId],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res
 					.status(200)
@@ -422,7 +416,7 @@ module.exports.restoreAccountController = (req, res) => {
 		[false, date, userId],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res
 					.status(200)
@@ -435,7 +429,7 @@ module.exports.restoreAccountController = (req, res) => {
 module.exports.getAccountsController = (req, res) => {
 	pool.query("SELECT * FROM accounts", (error, result) => {
 		if (error) {
-			return res.status(500).json({ error: "Internal server error" });
+			return res.status(500).json(error);
 		} else {
 			return res.status(200).json(result);
 		}
@@ -450,7 +444,7 @@ module.exports.getAccountController = (req, res) => {
 		[userId],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res.status(200).json(result[0]);
 			}

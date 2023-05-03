@@ -9,21 +9,48 @@ const pool = mysql.createPool({
 	database: process.env.DB_NAME,
 });
 
-module.exports = (req, res, next) => {
+module.exports.checkOngoing = (req, res, next) => {
 	const curriculumId = req.params.curriculumId;
 	pool.query(
 		"SELECT curriculum_status FROM curriculums WHERE curriculum_id = ?",
 		[curriculumId],
 		(error, result) => {
 			if (error) {
-				console.log(error);
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else {
 				const curriculumStatus = result[0].curriculum_status;
 				if (curriculumStatus !== "ONGOING") {
 					return res.status(409).json({
 						message:
 							"You can't edit or add subjects to this curriculum for it is already published or under revision",
+					});
+				} else {
+					next();
+				}
+			}
+		}
+	);
+};
+
+module.exports.checkPublished = (req, res, next) => {
+	const curriculumId = req.params.curriculumId;
+
+	pool.query(
+		"SELECT curriculum_status FROM curriculums WHERE curriculum_id = ?",
+		[curriculumId],
+		(error, result) => {
+			if (error) {
+				return res.status(500).json(error);
+			} else {
+				const curriculumStatus = result[0].curriculum_status;
+				if (curriculumStatus === "ONGOING") {
+					return res.status(409).json({
+						message:
+							"Curriculum is still ongoing. You can't add comment for now.",
+					});
+				} else if (curriculumStatus === "APPROVED") {
+					return res.status(409).json({
+						message: "Curriculum is already approved. You can't add comment",
 					});
 				} else {
 					next();

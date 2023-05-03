@@ -11,7 +11,7 @@ const {
 //* MIDDLEWARE IMPORTS
 const loginAuth = require("../middleware/loginAuth");
 const { verifyRoles } = require("../middleware/roleAuth");
-const curriculumStatusCheck = require("../middleware/curriculumStatusCheck");
+const { checkOngoing } = require("../middleware/curriculumStatusCheck");
 
 //* ROUTES
 
@@ -21,7 +21,7 @@ router.post(
 	"/:curriculumId",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER"]),
-	curriculumStatusCheck,
+	checkOngoing,
 	addSubjectController
 );
 
@@ -30,7 +30,7 @@ router.delete(
 	"/:curriculumId/:subjectCode",
 	loginAuth,
 	verifyRoles(["CHAIR", "MEMBER"]),
-	curriculumStatusCheck,
+	checkOngoing,
 	removeSubjectController
 );
 module.exports = router;

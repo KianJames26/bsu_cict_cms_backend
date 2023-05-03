@@ -43,7 +43,7 @@ module.exports.createSubjectController = (req, res) => {
 		[subjectCode],
 		(error, results) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal Server Error" });
+				return res.status(500).json(error);
 			} else if (results.length > 0) {
 				errors.push(
 					setErrorField("subjectCode", "Subject Code already exists")
@@ -131,7 +131,7 @@ module.exports.getSubjectsController = (req, res) => {
 		[res.locals.userDepartment],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res.status(200).json(result);
 			}
@@ -149,7 +149,7 @@ module.exports.getSubjectController = (req, res) => {
 		[department, subjectCode],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res.status(200).json(result);
 			}
@@ -208,8 +208,7 @@ module.exports.updateSubjectController = (req, res) => {
 							[code, subjectName, fileDirectory, subject],
 							(error, results) => {
 								if (error) {
-									console.error(error);
-									return res.status(500).json({ error });
+									return res.status(500).json(error);
 								} else {
 									return res
 										.status(200)
@@ -227,7 +226,7 @@ module.exports.updateSubjectController = (req, res) => {
 		[subject],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				const resultSubjectCode = result[0].subject_code;
 				const resultSubjectName = result[0].subject_name;
@@ -242,7 +241,7 @@ module.exports.updateSubjectController = (req, res) => {
 						[subjectCode],
 						(error, results) => {
 							if (error) {
-								return res.status(500).json({ error: "Internal server" });
+								return res.status(500).json(error);
 							} else if (results > 0) {
 								return res
 									.status(400)
@@ -268,7 +267,7 @@ module.exports.deleteSubjectController = (req, res) => {
 		[true, subjectCode],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res
 					.status(200)
@@ -285,7 +284,7 @@ module.exports.restoreSubjectController = (req, res) => {
 		[false, subjectCode],
 		(error, result) => {
 			if (error) {
-				return res.status(500).json({ error: "Internal server error" });
+				return res.status(500).json(error);
 			} else {
 				return res
 					.status(200)
