@@ -149,3 +149,43 @@ module.exports.removeSubjectController = (req, res) => {
 		}
 	);
 };
+
+module.exports.getPrerequisiteController = (req, res) => {
+	const prerequisiteId = req.params.prerequisiteId;
+
+	pool.query(
+		"SELECT subject_code FROM prerequisites WHERE prerequisite_id = ?",
+		[prerequisiteId],
+		(error, results) => {
+			if (error) {
+				return res.status(500).json(error);
+			} else {
+				let prerequisites = [];
+				for (const result of results) {
+					prerequisites.push(result.subject_code);
+				}
+				return res.status(200).json(prerequisites);
+			}
+		}
+	);
+};
+
+module.exports.getCorequisiteController = (req, res) => {
+	const corequisiteId = req.params.corequisiteId;
+
+	pool.query(
+		"SELECT subject_code FROM corequisites WHERE corequisite_id = ?",
+		[corequisiteId],
+		(error, results) => {
+			if (error) {
+				return res.status(500).json(error);
+			} else {
+				let corequisites = [];
+				for (const result of results) {
+					corequisites.push(result.subject_code);
+				}
+				return res.status(200).json(corequisites);
+			}
+		}
+	);
+};

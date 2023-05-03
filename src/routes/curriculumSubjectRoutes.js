@@ -6,6 +6,8 @@ const router = express.Router();
 const {
 	addSubjectController,
 	removeSubjectController,
+	getPrerequisiteController,
+	getCorequisiteController,
 } = require("../controllers/curriculumSubjectControllers");
 
 //* MIDDLEWARE IMPORTS
@@ -32,5 +34,22 @@ router.delete(
 	verifyRoles(["CHAIR", "MEMBER"]),
 	checkOngoing,
 	removeSubjectController
+);
+
+//! Prerequisites and Corequisites
+//? Get prerequisites
+router.get(
+	"/prerequisites/:prerequisiteId",
+	loginAuth,
+	verifyRoles(["CHAIR", "MEMBER"]),
+	getPrerequisiteController
+);
+
+//? Get corequisites
+router.get(
+	"/corequisites/:corequisiteId",
+	loginAuth,
+	verifyRoles(["CHAIR", "MEMBER"]),
+	getCorequisiteController
 );
 module.exports = router;
