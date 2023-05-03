@@ -37,7 +37,7 @@ router.delete(
 );
 
 //! Prerequisites and Corequisites
-//? Get prerequisites
+//? Read prerequisites
 router.get(
 	"/prerequisites/:prerequisiteId",
 	loginAuth,
@@ -45,7 +45,7 @@ router.get(
 	getPrerequisiteController
 );
 
-//? Get corequisites
+//? Read corequisites
 router.get(
 	"/corequisites/:corequisiteId",
 	loginAuth,
