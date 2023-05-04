@@ -32,11 +32,10 @@ const setErrorField = (field, errorMessage) => {
 };
 
 module.exports.createSubjectController = (req, res) => {
-	if (req.files) {
-		const file = req.files.syllabus;
-	} else {
-		const file = null;
-	}
+	const file =
+		req.files !== null && req.files.syllabus !== null
+			? req.files.syllabus
+			: null;
 	const department = res.locals.userDepartment;
 	const { subjectCode, subjectName } = req.body;
 	const date = getCurrentDateTime();
@@ -146,7 +145,6 @@ module.exports.getSubjectsController = (req, res) => {
 module.exports.getSubjectController = (req, res) => {
 	const department = res.locals.userDepartment;
 	const subjectCode = req.params.subjectCode;
-	const file = req.file;
 
 	pool.query(
 		"SELECT * FROM subjects WHERE department = ? AND subject_code = ?",
@@ -163,7 +161,10 @@ module.exports.getSubjectController = (req, res) => {
 
 module.exports.updateSubjectController = (req, res) => {
 	const subject = req.params.subjectCode;
-	const file = req.files.syllabus || null;
+	const file =
+		req.files !== null && req.files.syllabus !== null
+			? req.files.syllabus
+			: null;
 	const { subjectCode, subjectName } = req.body;
 	const department = res.locals.userDepartment;
 
