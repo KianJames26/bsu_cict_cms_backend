@@ -32,7 +32,7 @@ const setErrorField = (field, errorMessage) => {
 };
 
 module.exports.createSubjectController = (req, res) => {
-	const file = req.files.syllabus;
+	const file = req.files.syllabus || null;
 	const department = res.locals.userDepartment;
 	const { subjectCode, subjectName } = req.body;
 	const date = getCurrentDateTime();
@@ -159,7 +159,7 @@ module.exports.getSubjectController = (req, res) => {
 
 module.exports.updateSubjectController = (req, res) => {
 	const subject = req.params.subjectCode;
-	const file = req.file;
+	const file = req.files.syllabus || null;
 	const { subjectCode, subjectName } = req.body;
 	const department = res.locals.userDepartment;
 
