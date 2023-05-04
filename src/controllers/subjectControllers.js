@@ -32,6 +32,11 @@ const setErrorField = (field, errorMessage) => {
 };
 
 module.exports.createSubjectController = (req, res) => {
+	if (req.files) {
+		const file = req.files.syllabus;
+	} else {
+		const file = null;
+	}
 	const file = req.files.syllabus || null;
 	const department = res.locals.userDepartment;
 	const { subjectCode, subjectName } = req.body;
