@@ -37,7 +37,6 @@ module.exports.createSubjectController = (req, res) => {
 	} else {
 		const file = null;
 	}
-	const file = req.files.syllabus || null;
 	const department = res.locals.userDepartment;
 	const { subjectCode, subjectName } = req.body;
 	const date = getCurrentDateTime();
