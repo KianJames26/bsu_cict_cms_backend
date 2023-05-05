@@ -33,7 +33,10 @@ const setErrorField = (field, errorMessage) => {
 
 module.exports.createSubjectController = (req, res) => {
 	const file =
-		req.files !== null && req.files.syllabus !== null
+		req.files !== null &&
+		req.files.syllabus !== null &&
+		req.files !== undefined &&
+		req.files.syllabus !== undefined
 			? req.files.syllabus
 			: null;
 	const department = res.locals.userDepartment;
